@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
-from sklearn.datasets import load_iris, load_wine, load_boston
 import torch
 import torchvision
+from sklearn.datasets import load_boston, load_iris, load_wine
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset
 
@@ -27,6 +27,19 @@ class TabularDataset(Dataset):
 
     def __getitem__(self, index):
         return self.x[index], self.y[index]
+
+
+class CorruptionDataset(Dataset):
+    def __init__(self, x, x_tilde, corruption):
+        self.x = x
+        self.x_tilde = x_tilde
+        self.corruption = corruption
+
+    def __len__(self):
+        return len(self.x)
+
+    def __getitem__(self, index):
+        return self.x[index], self.x_tilde[index], self.corruption[index]
 
 
 class MaskDataset(Dataset):

@@ -5,13 +5,15 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from data_loader import CorruptionDataset, MaskDataset, get_dataset
+from infonce import InfoNCE
+from ntxent import NTXent
+from model import CL, UnlabeledLoss, VIMESelf, VIMESemi
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-
-from data_loader import MaskDataset, get_dataset
-from model import UnlabeledLoss, VIMESelf, VIMESemi
-from utils import EarlyStopping, mask_generator, perf_metric, pretext_generator
+from utils import (EarlyStopping, corruption_generator, mask_generator,
+                   perf_metric, pretext_generator)
 
 log = logging.getLogger(__name__)
 
@@ -24,25 +26,72 @@ class Train:
         self.semi_max_iter = config['semi_max_iter']
         self.batch_size = config['batch_size']
         self.test_batch_size = config['test_batch_size']
+        self.c = config['c']
         self.k = config['k']
         self.p_m = config['p_m']
         self.alpha = config['alpha']
         self.beta = config['beta']
+        self.temperature = config['temperature']
         self.l_samples = len(self.l_set)
         self.dim = self.l_set[0][0].shape[-1]
         self.l_dim = self.l_set[0][1].shape[-1]
 
+        self.cl = CL(self.dim, self.dim).to(self.device)
         self.vime_self = VIMESelf(self.dim, self.dim).to(self.device)
         self.vime_semi = VIMESemi(self.dim, self.l_dim).to(self.device)
 
+        # self.cl_loss_fn = NTXent()
+        self.cl_loss_fn = InfoNCE(self.temperature)
         self.l_loss_fn = nn.CrossEntropyLoss()
         self.u_loss_fn = UnlabeledLoss()
 
+
+        self.opt_cl = optim.SGD(self.cl.parameters(), lr=1e-3)
         self.opt_self = optim.RMSprop(self.vime_self.parameters(), lr=1e-3)
         self.opt_semi = optim.Adam(self.vime_semi.parameters())
 
         self.scheduler = StepLR(self.opt_self, step_size=50, gamma=0.1)
+        self.warmupscheduler = torch.optim.lr_scheduler.LambdaLR(self.opt_self, lambda epoch: (epoch+1)/10.0, verbose=False)
+        self.mainscheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(self.opt_self, 500, eta_min=0.05, last_epoch=-1, verbose=False)
         self.early_stopping = EarlyStopping(patience=config['early_stopping_patience'])
+
+    def ContrastiveLearning(self):
+            x = self.u_set.x.detach()
+            corruption = corruption_generator(x.shape, self.c)
+            corruption = corruption.to(x.device)
+            corruption, x_tilde = pretext_generator(corruption, x)
+
+            u_loader = DataLoader(CorruptionDataset(x, x_tilde, corruption), 512, shuffle=True)
+            for e in range(self.self_epochs):
+                with tqdm(u_loader, bar_format="{l_bar}{bar:20}{r_bar}{bar:-10b}") as pbar_epoch:
+                    for positive_idx, data in enumerate(pbar_epoch):
+                        x, x_tilde, corruption = data
+                        x = x.to(self.device)
+                        x_tilde = x_tilde.to(self.device)
+                        corruption = corruption.to(self.device)
+                        self.opt_cl.zero_grad()
+
+                        z_i, z_j, _ = self.cl(x, x_tilde)
+                        # negative_samples = negative_sample(x, positive_idx)
+                        # negative_keys = torch.zeros_like(negative_samples)
+
+                        # for num, x in enumerate(negative_samples):
+                        #     x = x.to(self.device)
+                        #     x = self.scarf_self.encoder(x)
+                        #     negative_keys[num] = x
+
+                        # loss = self.info_nce(z_i, z_j, negative_keys)
+                        contrastive_loss = self.cl_loss_fn(z_i, z_j)
+                        loss = contrastive_loss
+                        loss.backward()
+                        self.opt_cl.step()
+                        pbar_epoch.set_description(f"epoch[{e + 1} / {self.self_epochs}]")
+                        pbar_epoch.set_postfix({'loss': loss.item(),
+                                                'contrastiveloss': contrastive_loss.item()})
+                if e < 10:
+                    self.warmupscheduler.step()
+                else:
+                    self.mainscheduler.step()
 
     def semi_sl(self):
         idx = np.random.permutation(len(self.l_set))

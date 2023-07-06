@@ -3,6 +3,8 @@ import random
 
 import numpy as np
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 from sklearn.metrics import accuracy_score, roc_auc_score
 
 
@@ -18,6 +20,20 @@ def mask_generator(shape, p_m):
     """
     mask = torch.bernoulli(torch.ones(shape) * p_m)
     return mask.to(torch.float)
+
+
+def corruption_generator(shape, c):
+    """Generate corruption
+
+    Args:
+    - c: corruption rate
+    - x: feature matrix
+
+    Returns:
+    - corruption: binary corruption matrix
+    """
+    corruption = torch.bernoulli(torch.ones(shape) * c)
+    return corruption.to(torch.float)
 
 
 def pretext_generator(m, x):
@@ -129,3 +145,5 @@ class EarlyStopping:
             self.trace_func(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
         torch.save(model.state_dict(), self.path)
         self.val_loss_min = val_loss
+
+

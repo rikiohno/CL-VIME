@@ -18,6 +18,12 @@ def main(config):
     elif config['method'] == 'self-semi-sl':
         t.self_sl()
         t.semi_sl()
+    elif config['method'] == 'cl-vime':
+        t.ContrastiveLearning()
+        t.vime_self.encoder = t.cl.encoder
+        t.self_sl()
+        t.semi_sl()
+
     t.test()
 
 
