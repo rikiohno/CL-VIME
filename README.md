@@ -4,19 +4,19 @@ Implemented [VIME](https://proceedings.neurips.cc/paper/2020/file/7d97667a3e056a
 
 ## Code explanation
 1. conf/config.yaml
-  - File for manegement hyperparameters
+    - File for manegement hyperparameters
 2. data_loader.py
-  - Load and preprocess MNIST and other tabular data
+    - Load and preprocess MNIST and other tabular data
 3. [infonce.py](https://github.com/RElbers/info-nce-pytorch)
-  - Contrastive loss function
+    - Contrastive loss function
 4. main.py
-  - Executable file (adjusting hyperparameters using hydra)
+    - Executable file (adjusting hyperparameters using hydra)
 5. model.py
-  - Models required for VIME and Contrastive Learning
+    - Models required for VIME and Contrastive Learning
 6. train.py
-  - Training and test models
+    - Training and test models
 7. utils.py
-  - Some utility functions for metrics and contrastive learning, VIME frameworks
+    - Some utility functions for metrics and contrastive learning, VIME frameworks
 
 
 ## Requirement
