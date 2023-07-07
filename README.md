@@ -20,7 +20,7 @@ Implemented [VIME](https://proceedings.neurips.cc/paper/2020/file/7d97667a3e056a
 
 
 ## Requirement
-- Python = 3.8.10
+Python = 3.8.10
 
 ```bash
 python -m venv venv
