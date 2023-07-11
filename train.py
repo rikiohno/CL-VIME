@@ -12,7 +12,7 @@ from model import CL, UnlabeledLoss, VIMESelf, VIMESemi
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from utils import (EarlyStopping, corruption_generator, mask_generator,
+from utils import (EarlyStopping, mask_generator,
                    perf_metric, pretext_generator)
 
 log = logging.getLogger(__name__)
@@ -57,7 +57,7 @@ class Train:
 
     def ContrastiveLearning(self):
             x = self.u_set.x.detach()
-            corruption = corruption_generator(x.shape, self.c)
+            corruption = mask_generator(x.shape, self.c)
             corruption = corruption.to(x.device)
             corruption, x_tilde = pretext_generator(corruption, x)
 
