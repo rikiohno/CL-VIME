@@ -14,8 +14,8 @@ income_columns = ['age', 'workclass', 'fnlwgt', 'education',
 
 class TabularDataset(Dataset):
     '''
-    income train path './data/income_data.csv'
-    income test path './data/income_test.csv'
+    income train path './data/income/train.csv'
+    income test path './data/income/test.csv'
     '''
 
     def __init__(self, x, y):
@@ -109,6 +109,17 @@ def get_dataset(data_name, label_data_rate):
         test_set = torchvision.datasets.MNIST('../../../data', train=False, download=True)
         x_train, y_train = mnist_to_tabular(train_set.data.numpy(), train_set.targets.numpy())
         x_test, y_test = mnist_to_tabular(test_set.data.numpy(), test_set.targets.numpy())
+    elif data_name == 'income':
+        missing_fn = remove_missing_feature
+        missing_fn = mode_missing_feature
+        missing_fn = None
+        x_train_df, y_train_df = read_csv(os.path.join(data_dir, 'income/train.csv'), 'income', income_columns, missing_fn=missing_fn)
+        x_test_df, y_test_df = read_csv(os.path.join(data_dir, 'income/test.csv'), 'income', income_columns, missing_fn=missing_fn)
+        x_train_df.pop('education-num')
+        x_test_df.pop('education-num')
+        # " <=50k.", ">50k." to " <=50k", ">50k"
+        y_test_df = pd.DataFrame([s.rstrip('.') for s in y_test_df.values])
+        x_train, y_train, x_test, y_test, cate_num = categorical2onehot_sklearn(x_train_df, y_train_df, x_test_df, y_test_df)
 
     # Divide labeled and unlabeled data
     idx = np.random.permutation(len(y_train))
