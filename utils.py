@@ -22,20 +22,6 @@ def mask_generator(shape, p_m):
     return mask.to(torch.float)
 
 
-def corruption_generator(shape, c):
-    """Generate corruption
-
-    Args:
-    - c: corruption rate
-    - x: feature matrix
-
-    Returns:
-    - corruption: binary corruption matrix
-    """
-    corruption = torch.bernoulli(torch.ones(shape) * c)
-    return corruption.to(torch.float)
-
-
 def pretext_generator(m, x):
     """Generate corrupted samples.
 
