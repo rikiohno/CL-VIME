@@ -5,6 +5,8 @@ import torchvision
 from sklearn.datasets import load_boston, load_iris, load_wine
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset
+from utils import (categorical2onehot_sklearn, mode_missing_feature,
+                   remove_missing_feature)
 
 income_columns = ['age', 'workclass', 'fnlwgt', 'education',
                   'education-num', 'marital-status', 'occupation',
